@@ -67,9 +67,10 @@ def calculate_macs(model: onnx.ModelProto) -> int:
         for output in node.output:
             if output in graph_outputs:
                 return output
-        return node.name
+#         return node.name
+        return node.output[0]
 
-    output_name_mapping = {node.name: get_mapping_for_node(node, graph_outputs) for node in onnx_nodes}
+    output_name_mapping = {node.output[0]: get_mapping_for_node(node, graph_outputs) for node in onnx_nodes}
     output_mapping = {}
 
     for name in output_name_mapping:
@@ -143,9 +144,10 @@ def calculate_macs(model: onnx.ModelProto) -> int:
 
     macs = 0
     for node in onnx_nodes:
-        node_output_shape = output_shapes[node.name]
-        node_input_shape = output_shapes[node.input[0]]
-        macs += mac_calculators[node.op_type](
-            node, node_input_shape, node_output_shape, onnx_node_attributes_to_dict(node.attribute)
-        )
+        if node.op_type in list(mac_calculators.keys()):
+            node_output_shape = output_shapes[node.output[0]]
+            node_input_shape = output_shapes[node.input[0]]
+            macs += mac_calculators[node.op_type](
+                node, node_input_shape, node_output_shape, onnx_node_attributes_to_dict(node.attribute)
+            )
     return macs
